@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Comma Separator Tests</title>
+    <link rel="stylesheet" href="https://code.jquery.com/qunit/qunit-2.20.0.css">
+</head>
+<body>
+    <div id="qunit"></div>
+    <div id="qunit-fixture">
+        <!-- Mock DOM elements for functions that might still interact with them, if any -->
+        <!-- Not strictly needed for processSeparation and processRemoveDuplicates as they are pure functions -->
+    </div>
+
+    <script src="https://code.jquery.com/qunit/qunit-2.20.0.js"></script>
+    <!-- script.js is included here. Note: it exports functions if module.exports is available.
+         In a browser environment for QUnit, these functions will be global or attached to window if not careful.
+         For simplicity, we'll assume processSeparation and processRemoveDuplicates are accessible.
+         If script.js was structured with ES modules, we'd use type="module" for the test script.
+    -->
+    <script src="script.js"></script>
+    <script>
+        // Ensure functions are available in the global scope for QUnit if not using modules
+        const { processSeparation, processRemoveDuplicates } = (typeof module !== 'undefined' && module.exports) ? module.exports : window;
+
+        QUnit.module('processSeparation', function() {
+            QUnit.test('empty input', function(assert) {
+                const result = processSeparation('');
+                assert.deepEqual(result, { processedText: '', count: 0 }, 'Should return empty string and count 0');
+            });
+
+            QUnit.test('single line input', function(assert) {
+                const result = processSeparation('hello world');
+                assert.deepEqual(result, { processedText: 'hello, world', count: 2 }, 'Should separate words with comma');
+            });
+
+            QUnit.test('multi-line input', function(assert) {
+                const result = processSeparation('hello\nworld');
+                assert.deepEqual(result, { processedText: 'hello, world', count: 2 }, 'Should handle newline separator');
+            });
+
+            QUnit.test('leading/trailing spaces', function(assert) {
+                const result = processSeparation('  hello world  ');
+                assert.deepEqual(result, { processedText: 'hello, world', count: 2 }, 'Should trim spaces');
+            });
+
+            QUnit.test('multiple spaces between words', function(assert) {
+                const result = processSeparation('hello   world');
+                assert.deepEqual(result, { processedText: 'hello, world', count: 2 }, 'Should handle multiple spaces');
+            });
+            
+            QUnit.test('input with only spaces', function(assert) {
+                const result = processSeparation('   ');
+                assert.deepEqual(result, { processedText: '', count: 0 }, 'Should return empty string and count 0 for only spaces');
+            });
+
+            QUnit.test('single word input', function(assert) {
+                const result = processSeparation('hello');
+                assert.deepEqual(result, { processedText: 'hello', count: 1 }, 'Should handle single word');
+            });
+        });
+
+        QUnit.module('processRemoveDuplicates', function() {
+            QUnit.test('empty input', function(assert) {
+                const result = processRemoveDuplicates('');
+                assert.deepEqual(result, { processedText: '', count: 0 }, 'Should return empty string and count 0');
+            });
+
+            QUnit.test('no duplicates', function(assert) {
+                const result = processRemoveDuplicates('apple banana orange');
+                assert.deepEqual(result, { processedText: 'apple, banana, orange', count: 3 }, 'Should keep all words if no duplicates');
+            });
+
+            QUnit.test('duplicates (space separated)', function(assert) {
+                const result = processRemoveDuplicates('apple banana apple orange banana');
+                assert.deepEqual(result, { processedText: 'apple, banana, orange', count: 3 }, 'Should remove duplicates, preserve order');
+            });
+            
+            QUnit.test('duplicates with different casing (space separated)', function(assert) {
+                const result = processRemoveDuplicates('Apple banana apple Orange banana');
+                assert.deepEqual(result, { processedText: 'Apple, banana, Orange', count: 3 }, 'Should remove duplicates (case-insensitive), preserve original casing of first occurrence');
+            });
+
+            QUnit.test('duplicates (comma separated input)', function(assert) {
+                const result = processRemoveDuplicates('apple, banana, apple, orange, banana', true);
+                assert.deepEqual(result, { processedText: 'apple, banana, orange', count: 3 }, 'Should remove duplicates from comma-separated input');
+            });
+            
+            QUnit.test('duplicates with different casing (comma separated input)', function(assert) {
+                const result = processRemoveDuplicates('Apple, banana, apple, Orange, banana', true);
+                assert.deepEqual(result, { processedText: 'Apple, banana, Orange', count: 3 }, 'Should remove duplicates (case-insensitive) from comma-separated input, preserve original casing');
+            });
+
+            QUnit.test('leading/trailing spaces around words and commas', function(assert) {
+                const result = processRemoveDuplicates('  apple  ,  banana ,apple,orange  ,banana  ', true);
+                assert.deepEqual(result, { processedText: 'apple, banana, orange', count: 3 }, 'Should trim spaces around words and commas');
+            });
+
+            QUnit.test('input with only spaces', function(assert) {
+                const result = processRemoveDuplicates('   ', false);
+                assert.deepEqual(result, { processedText: '', count: 0 }, 'Should return empty string and count 0 for only spaces (not comma separated)');
+            });
+
+            QUnit.test('input with only spaces and commas', function(assert) {
+                const result = processRemoveDuplicates('  ,   ,  ', true);
+                assert.deepEqual(result, { processedText: '', count: 0 }, 'Should return empty string and count 0 for only spaces and commas (comma separated)');
+            });
+            
+            QUnit.test('single word input (no duplicates)', function(assert) {
+                const result = processRemoveDuplicates('hello', false);
+                assert.deepEqual(result, { processedText: 'hello', count: 1 }, 'Should handle single word');
+            });
+
+            QUnit.test('single word input, repeated (space separated)', function(assert) {
+                const result = processRemoveDuplicates('hello hello hello', false);
+                assert.deepEqual(result, { processedText: 'hello', count: 1 }, 'Should handle single word repeated');
+            });
+
+            QUnit.test('single word input, repeated (comma separated)', function(assert) {
+                const result = processRemoveDuplicates('hello, hello, hello', true);
+                assert.deepEqual(result, { processedText: 'hello', count: 1 }, 'Should handle single word repeated (comma separated)');
+            });
+
+            QUnit.test('mixed space and newline separators with duplicates', function(assert) {
+                const result = processRemoveDuplicates('apple\nbanana apple orange\nbanana', false);
+                assert.deepEqual(result, { processedText: 'apple, banana, orange', count: 3 }, 'Should handle mixed separators and remove duplicates');
+            });
+        });
+    </script>
+</body>
+</html>
