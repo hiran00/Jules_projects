@@ -45,6 +45,15 @@ button:hover {
     background-color: #0056b3;
 }
 
+.button-container {
+    display: flex;
+    gap: 10px; /* Adds space between the buttons */
+    justify-content: center; /* Centers buttons if they don't fill the container */
+    width: 80%; /* Matches textarea width for alignment */
+    max-width: 600px; /* Matches textarea max-width */
+    margin-bottom: 15px; /* Adds some space below the button container */
+}
+
 #wordCount {
     margin-top: 15px;
     font-style: italic;
@@ -59,7 +68,19 @@ button:hover {
     }
 
     button {
-        width: calc(50% - 10px); /* Two buttons side-by-side with margin */
-        box-sizing: border-box;
+        width: auto; /* Allow buttons to size based on content and padding */
+        /* The flex container will handle their layout. */
+        /* If specific width is needed for smaller screens, it can be adjusted here */
+        /* e.g., width: 100%; for stacking, or flex-basis for proportional sizing */
+    }
+
+    .button-container {
+        flex-direction: column; /* Stack buttons vertically on small screens */
+        align-items: stretch; /* Make buttons take full width of container */
+    }
+
+    .button-container button {
+        width: 100%; /* Make buttons take full width within the column flex container */
+        margin: 5px 0; /* Adjust margin for stacked layout */
     }
 }
